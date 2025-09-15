@@ -1,0 +1,7 @@
+---
+- name: Copy files to servers
+  hosts: server
+  become: true
+  roles:
+    - copy
+
