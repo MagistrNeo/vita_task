@@ -1,0 +1,140 @@
+Решение задания по Ansible
+
+Структура проекта
+
+```
+ansible-project/
+├── hosts.ini          # Inventory файл с хостами
+├── playbook.yml       # Основной плейбук
+└── roles/
+    └── copy/          # Роль для копирования файлов
+        ├── tasks/
+        │   └── main.yml    # Задачи роли
+        └── files/
+            ├── file1.txt   # Файлы для копирования
+            └── file2.txt
+```
+
+1. Inventory файл (hosts.ini)
+
+Состав
+```ini
+[server]
+localhost ansible_connection=local
+
+[server:vars]
+ansible_user=$USER
+```
+
+Пояснение:
+- [server] - группа серверов
+- localhost - хост для тестирования на локальной машине
+- ansible_connection=local - выполнение задач локально без SSH
+- ansible_user=$USER - использование текущего пользователя
+
+2. Роль copy (roles/copy/tasks/main.yml)
+---
+- name: Copy files to servers
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - { src: 'file1.txt', dest: '/tmp/file1.txt' }
+    - { src: 'file2.txt', dest: '/tmp/file2.txt' }
+```
+
+Состав:
+- Модуль `ansible.builtin.copy` - для копирования файлов
+- `loop` - для итерации по списку файлов
+- Переменные `{{ item.src }}` и `{{ item.dest }}` - параметры из каждого элемента loop
+
+3. Основной плейбук (playbook.yml)
+---
+- name: Copy files to servers
+  hosts: server
+  become: true
+  roles:
+    - copy
+```
+
+Состав:
+- hosts: server - целевая группа из inventory
+- become: true - получение прав root
+- roles: - copy - подключение роли copy
+
+Разница между with_items и loop
+
+with_items (устаревший, но поддерживается)**
+
+**Особенности:**
+- Появился в ранних версиях Ansible (до 2.4)
+- Автоматически "распаковывает" вложенные списки
+- Меньше функциональности
+- Медленнее работает
+
+Пример:
+
+- name: Copy files with_items
+  copy:
+    src: "{{ item }}"
+    dest: "/tmp/{{ item }}"
+  with_items:
+    - file1.txt
+    - file2.txt
+
+
+loop (современный, рекомендуется)
+
+Особенности:
+- Введен в Ansible 2.5+ как замена with_items
+- Более явное поведение
+- Лучшая производительность
+- Больше возможностей (фильтры, условия)
+- Не распаковывает автоматически вложенные списки
+
+Пример:
+
+- name: Copy files with loop
+  copy:
+    src: "{{ item }}"
+    dest: "/tmp/{{ item }}"
+  loop:
+    - file1.txt
+    - file2.txt
+```
+
+### **Ключевые различия**
+
+1. Производительность - loop работает быстрее
+2. Поведение со списками:
+   - `with_items`: `[[a, b], [c, d]]` → `[a, b, c, d]`
+   - `loop`: `[[a, b], [c, d]]` → `[[a, b], [c, d]]`
+3. Дополнительные возможности:
+   - loop поддерживает:
+     - `loop_control` (управление итерациями)
+     - Условия в цикле
+     - Фильтры
+     - Более сложные структуры данных
+
+Проверка работы 
+
+# Проверка синтаксиса
+ansible-playbook playbook.yml --syntax-check
+
+# Тестовый запуск
+ansible-playbook playbook.yml --check
+
+# Реальный запуск
+ansible-playbook playbook.yml
+
+# С подробным выводом
+ansible-playbook playbook.yml -vvv
+
+ansible-lint - проверка качества кода
+
+ansible-inventory --list - проверка inventory
+
+ansible server -m ping - проверка подключения
