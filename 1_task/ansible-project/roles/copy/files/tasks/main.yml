@@ -1,0 +1,11 @@
+---
+- name: Copy files to servers
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - { src: 'file1.txt', dest: '/tmp/file1.txt' }
+    - { src: 'file2.txt', dest: '/tmp/file2.txt' }
